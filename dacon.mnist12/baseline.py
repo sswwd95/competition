@@ -20,10 +20,10 @@ def run():
         
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu") # 디바이스 설정
 
-dirty_mnist_answer = pd.read_csv("../dacon12/dirty_mnist_answer.csv")
+dirty_mnist_answer = pd.read_csv("../dacon12/dirty_mnist_2nd_answer.csv")
 # dirty_mnist라는 디렉터리 속에 들어있는 파일들의 이름을 
 # namelist라는 변수에 저장
-namelist = os.listdir('../dacon12/dirty_mnist/')
+namelist = os.listdir('../dacon12/dirty_mnist_2nd/')
 
 # numpy를 tensor로 변환하는 ToTensor 정의
 class ToTensor(object):
@@ -40,7 +40,7 @@ class ToTensor(object):
 to_tensor = T.Compose([
                         ToTensor()
                     ])
-
+"""
 class DatasetMNIST(torch.utils.data.Dataset):
     def __init__(self,
                 dir_path,
@@ -310,3 +310,4 @@ if __name__ == '__main__':
     sample_submission = pd.read_csv("../dacon12/sample_submission.csv")
     sample_submission.iloc[:,1:] = predictions_mean
     sample_submission.to_csv("../dacon12/sub/baseline_prediction.csv", index = False)
+"""

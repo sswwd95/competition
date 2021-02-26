@@ -1,4 +1,3 @@
 import torch
-print(torch.cuda.get_device_name(0))
-print(torch.cuda.is_available())
-print(torch.__version__)
+torch.set_num_threads(1)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
