@@ -1,0 +1,18 @@
+2021-04-10 22:35:43,420; INFO; NP.forecaster; _handle_missing_data; dropped 24 NAN row in 'y'
+2021-04-10 22:35:43,433; INFO; NP.config; set_auto_batch_epoch; Auto-set batch_size to 64
+2021-04-10 22:35:43,433; INFO; NP.config; set_auto_batch_epoch; Auto-set epochs to 61
+2021-04-10 22:35:46,621; INFO; NP.utils_torch; lr_range_test; lr-range-test results: steep: 4.93E-02, min: 5.26E-01
+2021-04-10 22:35:46,621; INFO; NP.utils_torch; lr_range_test; learning rate range test selected lr: 2.39E-01
+2021-04-10 22:36:27,144; INFO; NP.forecaster; _handle_missing_data; dropped 48 NAN row in 'y'
+2021-04-10 22:36:27,153; INFO; NP.config; set_auto_batch_epoch; Auto-set batch_size to 64
+2021-04-10 22:36:27,153; INFO; NP.config; set_auto_batch_epoch; Auto-set epochs to 61
+2021-04-10 22:36:30,106; INFO; NP.utils_torch; lr_range_test; lr-range-test results: steep: 2.47E-02, min: 3.51E-01
+2021-04-10 22:36:30,106; INFO; NP.utils_torch; lr_range_test; learning rate range test selected lr: 1.45E-01
+2021-04-10 22:37:10,463; INFO; NP.config; set_auto_batch_epoch; Auto-set batch_size to 64
+2021-04-10 22:37:10,464; INFO; NP.config; set_auto_batch_epoch; Auto-set epochs to 61
+2021-04-10 22:37:13,451; INFO; NP.utils_torch; lr_range_test; lr-range-test results: steep: 3.69E-02, min: 4.18E-01
+2021-04-10 22:37:13,451; INFO; NP.utils_torch; lr_range_test; learning rate range test selected lr: 1.86E-01
+2021-04-10 22:37:53,861; INFO; NP.config; set_auto_batch_epoch; Auto-set batch_size to 64
+2021-04-10 22:37:53,861; INFO; NP.config; set_auto_batch_epoch; Auto-set epochs to 61
+2021-04-10 22:37:56,964; INFO; NP.utils_torch; lr_range_test; lr-range-test results: steep: 3.49E-02, min: 4.97E-01
+2021-04-10 22:37:56,964; INFO; NP.utils_torch; lr_range_test; learning rate range test selected lr: 2.05E-01
