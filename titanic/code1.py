@@ -1,3 +1,5 @@
+# https://www.kaggle.com/hiro5299834/tps-apr-2021-7-models-voting-ensemble
+
 import pandas as pd 
 import numpy as np
 
@@ -455,3 +457,6 @@ FOLD 9: lgb 0.7784, ctb 0.7784, lor 0.7623, dtc 0.7722, rfc 0.7704, hgb 0.7780, 
 lgb 0.783090, ctb 0.782640, lor 0.767390, dtc 0.774220, rfc 0.776120, hgb 0.782650, svc 0.767200
 Voting ensemble CV 0.780220
 '''
+
+# 04/25 270등
+# score : 0.80245 
