@@ -273,5 +273,6 @@ submission[TARGET] = (submission[[col for col in submission.columns if col.start
 
 submission[['PassengerId', TARGET]].to_csv("A:\\study\\titanic\\sub\\voting_submission2.csv", index = False)
 
+
 # 04/29 114 등
 # 0.81714
