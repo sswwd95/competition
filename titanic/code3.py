@@ -180,3 +180,8 @@ submission.to_csv('A:\\study\\titanic\\sub\\voting_submission3.csv')
 
 # 04/30 143등
 # 0.81714
+
+
+# 5/1 최종 16등
+# 0.81309
+
