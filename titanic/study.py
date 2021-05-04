@@ -45,6 +45,7 @@ submission = pd.read_csv("A:\\study\\data\\titanic\\sample_submission.csv", inde
 # Pseudo labels taken from great BIZEN notebook: https://www.kaggle.com/hiro5299834/tps-apr-2021-pseudo-labeling-voting-ensemble
 pseudo_labels = pd.read_csv("A:\\study\\data\\titanic\\pseudo_label.csv")
 print(pseudo_labels)
+print(pseudo_labels[TARGET])
 
 test[TARGET] = pseudo_labels[TARGET]
 print(test[TARGET])
@@ -149,67 +150,85 @@ all_df['Embarked'] = all_df['Embarked'].fillna('X')
 
 # Name, take only surnames
 all_df['Name'] = all_df['Name'].map(lambda x: x.split(',')[0])
-print(all_df[:10])   #[5 rows x 12 columns]
+print(all_df[:10]) 
 print(all_df.isnull().sum())  #결측값 제거 완료
 
-# # 컬럼별로 다르게 적용
-# label_cols = ['Name', 'Ticket', 'Sex']
-# onehot_cols = ['Cabin', 'Embarked']
-# numerical_cols = ['Pclass', 'Age', 'SibSp', 'Parch', 'Fare']
+# 컬럼별로 다르게 적용
+label_cols = ['Name', 'Ticket', 'Sex']
+onehot_cols = ['Cabin', 'Embarked']
+numerical_cols = ['Pclass', 'Age', 'SibSp', 'Parch', 'Fare']
 
-# def label_encoder(c):
-#     le = LabelEncoder()
-#     return le.fit_transform(c)
+def label_encoder(c):
+    le = LabelEncoder()
+    return le.fit_transform(c)
 
-# scaler = StandardScaler()
+scaler = StandardScaler()
 
-# onehot_encoded_df = pd.get_dummies(all_df[onehot_cols])
-# label_encoded_df = all_df[label_cols].apply(label_encoder)
-# numerical_df = pd.DataFrame(scaler.fit_transform(all_df[numerical_cols]), columns=numerical_cols)
-# target_df = all_df[TARGET]
+onehot_encoded_df = pd.get_dummies(all_df[onehot_cols]) 
+# get_dummies() = 결측값을 제외하고 0과 1로 만들어준다.
 
-# all_df = pd.concat([numerical_df, label_encoded_df, onehot_encoded_df, target_df], axis=1)
-# # print(all_df.head(5))   #[5 rows x 22 columns]
+label_encoded_df = all_df[label_cols].apply(label_encoder)
+#label_encoder 함수 적용(숫자 데이터로 만들어줌)
 
-# all_df_scaled = all_df.drop([TARGET], axis = 1).copy()
-# scaler = StandardScaler()
-# scaler.fit(all_df.drop([TARGET], axis = 1))
-# all_df_scaled = scaler.transform(all_df_scaled)
+numerical_df = pd.DataFrame(scaler.fit_transform(all_df[numerical_cols]), columns=numerical_cols)
+# StandardScaler 적용해서 값들 전처리
 
-# all_df_scaled = pd.DataFrame(all_df_scaled, columns=all_df.drop([TARGET], axis = 1).columns)
-# # print(all_df_scaled.head(5))  #[5 rows x 21 columns]
-
-# X = all_df_scaled
-# y = all_df[TARGET]
-
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.20, random_state = RANDOM_SEED)
-
-# test = all_df_scaled[len(train):]
-
-# # print (f'X:{X.shape} y: {y.shape} \n')  #X:(200000, 21) y: (200000,) 
-# # print (f'X_train:{X_train.shape} y_train: {y_train.shape}')
-# # print (f'X_test:{X_test.shape} y_test: {y_test.shape}')
-# print (f'test:{test.shape}')
-# # X:(200000, 21) y: (200000,) 
-# # X_train:(160000, 21) y_train: (160000,)
-# # X_test:(40000, 21) y_test: (40000,)
-# # test:(100000, 21)  
-
-
-# # Single SVM run ==================================== 
-# svc_kernel_rbf = SVC(kernel='rbf', random_state=0, C=1.3040348958661234, gamma=0.11195797734572176, verbose=True)
-# svc_kernel_rbf.fit(X_train, y_train)
-# y_pred = svc_kernel_rbf.predict(X_test)
-# accuracy_score(y_pred, y_test)
-
-# final_pred = svc_kernel_rbf.predict(test)
-
-# submission['Survived'] = np.round(final_pred).astype(int)
-# submission.to_csv('A:\\study\\data\\titanic\\svc_kernel_rbf.csv')
+target_df = all_df[TARGET]
 
 
 
-# # Hyperparams selection and Kfolds==================
+# 열 단위로 집계(axis = 0), 행 단위로 집계(axis = 1)
+all_df = pd.concat([numerical_df, label_encoded_df, onehot_encoded_df, target_df], axis=1)
+
+all_df_scaled = all_df.drop([TARGET], axis = 1).copy()
+
+scaler.fit(all_df.drop([TARGET], axis = 1))
+all_df_scaled = scaler.transform(all_df_scaled)
+# 학습 데이터 세트로 fit() 된 Scaler를 이용하여 테스트 데이터를 변환할 경우에는 
+# 테스트 데이터에서 다시 fit()하지 않고 반드시 그대로 이 Scaler를 이용하여 transform()을 수행해야 한다.
+
+all_df_scaled = pd.DataFrame(all_df_scaled, columns=all_df.drop([TARGET], axis = 1).columns)
+
+X = all_df_scaled
+y = all_df[TARGET]
+print (f'X:{X.shape} y: {y.shape}')
+# X:(200000, 21) y: (200000,)
+
+X_train, X_test, y_train, y_test = train_test_split(
+       X, y, test_size = 0.20, random_state = RANDOM_SEED)
+
+test = all_df_scaled[len(train):]
+
+
+print (f'X_train:{X_train.shape} y_train: {y_train.shape}')
+print (f'X_test:{X_test.shape} y_test: {y_test.shape}')
+print (f'test:{test.shape}')
+# X:(200000, 21) y: (200000,) 
+# X_train:(160000, 21) y_train: (160000,)
+# X_test:(40000, 21) y_test: (40000,)
+# test:(100000, 21)  
+
+
+# Single SVM run ==================================== 
+svc_kernel_rbf = SVC(
+       kernel='rbf',
+       random_state=0,
+       C=1.3040348958661234,
+       gamma=0.11195797734572176,
+       verbose=True)
+
+svc_kernel_rbf.fit(X_train, y_train)
+y_pred = svc_kernel_rbf.predict(X_test)
+accuracy_score(y_pred, y_test)
+print('svc_kernel_rbf_acc : ', accuracy_score(y_pred,y_test))
+
+final_pred = svc_kernel_rbf.predict(test)
+
+submission['Survived'] = np.round(final_pred).astype(int)
+submission.to_csv('A:\\study\\data\\titanic\\svc_kernel_rbf3.csv')
+
+
+# Hyperparams selection and Kfolds==================
 # def objective(trial):
 #     from sklearn.svm import SVC
 #     params = {
@@ -217,24 +236,32 @@ print(all_df.isnull().sum())  #결측값 제거 완료
 #         'gamma': trial.suggest_categorical('gamma', ["auto"]),
 #         'kernel': trial.suggest_categorical("kernel", ["rbf"])
 #     }
+def objective(trial):
+    from sklearn.svm import SVC
+    params = {
+        'C': trial.suggest_loguniform('C', [1, 10, 50, 100,200,300, 1000]),
+        'gamma': trial.suggest_categorical('gamma', [ 0.001, 0.01, 0.1, 1]),
+        'kernel': trial.suggest_categorical("kernel", ["rbf"])
+    }
 
-#     svc = SVC(**params, verbose=True)
-#     svc.fit(X_train, y_train)
-#     return svc.score(X_test, y_test)
+    svc = SVC(**params, verbose=True)
+    svc.fit(X_train, y_train)
+    return svc.score(X_test, y_test)
 
-# study = optuna.create_study(sampler=optuna.samplers.TPESampler(seed=123),
-#                             direction="maximize",
-#                             pruner=optuna.pruners.MedianPruner())
-# study.optimize(objective, n_trials=5, show_progress_bar=True)
+study = optuna.create_study(sampler=optuna.samplers.TPESampler(seed=123),
+                            direction="maximize",
+                            pruner=optuna.pruners.MedianPruner())
+study.optimize(objective, n_trials=5, show_progress_bar=True)
 
-# print(f"Best Value from optune: {study.best_trial.value}")
-# print(f"Best Params from optune: {study.best_params}")
+print(f"Best Value from optune: {study.best_trial.value}")
+print(f"Best Params from optune: {study.best_params}")
 
-# if study.best_trial.value >= 0.8851:
-#     best_value = study.best_params
-# else:
-#     best_value = {'C': 0.9284115572652722, 'gamma': 0.1234156796521313, 'kernel': 'rbf'}
-#     print(f"Using precalculated best params instead: {best_value}")
+
+if study.best_trial.value >= 0.8851:
+    best_value = study.best_params
+else:
+    best_value = {'C': 0.9284115572652722, 'gamma': 0.1234156796521313, 'kernel': 'rbf'}
+    print(f"Using precalculated best params instead: {best_value}")
 
 # n_folds = 20
 # kf = KFold(n_splits=n_folds, shuffle=True, random_state=0)
