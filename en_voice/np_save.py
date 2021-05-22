@@ -43,7 +43,7 @@ def load_data(paths):
     result = []
     for path in tqdm(paths):
         # sr = 16000이 의미하는 것은 1초당 16000개의 데이터를 샘플링 한다는 것입니다.
-        data, sr = librosa.load(path, sr = 22050)
+        data, sr = librosa.load(path, sr = 18000)
         result.append(data)
     result = np.array(result) 
     # 메모리가 부족할 때는 데이터 타입을 변경해 주세요 ex) np.array(data, dtype = np.float32)
@@ -53,27 +53,29 @@ def load_data(paths):
 # train 데이터를 로드하기 위해서는 많은 시간이 소모 됩니다.
 # 따라서 추출된 정보를 npy파일로 저장하여 필요 할 때마다 불러올 수 있게 준비합니다.
 
-os.mkdir("A:\study\en_voice/npy_data")
+# os.mkdir("A:\study\en_voice/npy_data")
 
 africa_train_data = load_data(africa_train_paths)
-np.save("A:\study\en_voice/npy_data/africa_npy", africa_train_data)
+np.save("A:\study\en_voice/npy_data/africa18_npy", africa_train_data)
 
 australia_train_data = load_data(australia_train_paths)
-np.save("A:\study\en_voice/npy_data/australia_npy", australia_train_data)
+np.save("A:\study\en_voice/npy_data/australia18_npy", australia_train_data)
 
 canada_train_data = load_data(canada_train_paths)
-np.save("A:\study\en_voice/npy_data/canada_npy", canada_train_data)
+np.save("A:\study\en_voice/npy_data/canada18_npy", canada_train_data)
 
 england_train_data = load_data(england_train_paths)
-np.save("A:\study\en_voice/npy_data/england_npy", england_train_data)
+np.save("A:\study\en_voice/npy_data/england18_npy", england_train_data)
 
 hongkong_train_data = load_data(hongkong_train_paths)
-np.save("A:\study\en_voice/npy_data/hongkong_npy", hongkong_train_data)
+np.save("A:\study\en_voice/npy_data/hongkong18_npy", hongkong_train_data)
 
 us_train_data = load_data(us_train_paths)
-np.save("A:\study\en_voice/npy_data/us_npy", us_train_data)
+np.save("A:\study\en_voice/npy_data/us18_npy", us_train_data)
 
 test_data = load_data(test_["path"])
-np.save("A:\study\en_voice/npy_data/test_npy", test_data)
+np.save("A:\study\en_voice/npy_data/test18_npy", test_data)
 
 print("done")
+
+# sr = 18000 파일 끝에 18_npy

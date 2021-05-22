@@ -40,14 +40,14 @@ print('id : ',test_["id"])
 start = datetime.now()
 
 # npy파일로 저장된 데이터를 불러옵니다.
-africa_train_data = np.load("A:\study\en_voice/npy_data/africa_npy.npy", allow_pickle = True)
-australia_train_data = np.load("A:\study\en_voice/npy_data/australia_npy.npy", allow_pickle = True)
-canada_train_data = np.load("A:\study\en_voice/npy_data/australia_npy.npy", allow_pickle = True)
-england_train_data = np.load("A:\study\en_voice/npy_data/england_npy.npy", allow_pickle = True)
-hongkong_train_data = np.load("A:\study\en_voice/npy_data/hongkong_npy.npy", allow_pickle = True)
-us_train_data = np.load("A:\study\en_voice/npy_data/us_npy.npy", allow_pickle = True)
+africa_train_data = np.load("A:\study\en_voice/npy_data/africa18_npy.npy", allow_pickle = True)
+australia_train_data = np.load("A:\study\en_voice/npy_data/australia18_npy.npy", allow_pickle = True)
+canada_train_data = np.load("A:\study\en_voice/npy_data/australia18_npy.npy", allow_pickle = True)
+england_train_data = np.load("A:\study\en_voice/npy_data/england18_npy.npy", allow_pickle = True)
+hongkong_train_data = np.load("A:\study\en_voice/npy_data/hongkong18_npy.npy", allow_pickle = True)
+us_train_data = np.load("A:\study\en_voice/npy_data/us18_npy.npy", allow_pickle = True)
 
-test_data = np.load("A:\study\en_voice/npy_data/test_npy.npy", allow_pickle = True)
+test_data = np.load("A:\study\en_voice/npy_data/test18_npy.npy", allow_pickle = True)
 
 train_data_list = [africa_train_data, australia_train_data, canada_train_data, england_train_data, hongkong_train_data, us_train_data]
 
@@ -188,9 +188,9 @@ def build_fn():
     
     in_ = Input(shape = (train_x.shape[1:]))
     
-    block_01 = block(in_, units = 32, dropout_rate = dropout_rate)
-    block_02 = block(block_01, units = 64, dropout_rate = dropout_rate)
-    block_03 = block(block_02, units = 128, dropout_rate = dropout_rate)
+    block_01 = block(in_, units = 16, dropout_rate = dropout_rate)
+    block_02 = block(block_01, units = 32, dropout_rate = dropout_rate)
+    block_03 = block(block_02, units = 64, dropout_rate = dropout_rate)
 
     block_04 = second_block(block_03, units = 64, dropout_rate = dropout_rate)
     block_05 = second_block(block_04, units = 128, dropout_rate = dropout_rate)
@@ -212,8 +212,8 @@ def build_fn():
     return model
 
 split = StratifiedKFold(n_splits = 5, shuffle = True, random_state = 10)
-es = EarlyStopping(patience= 10, monitor= 'val_loss', verbose= 1)
-lr = ReduceLROnPlateau(patience=5, monitor= 'val_loss', factor=0.5, verbose=1)
+es = EarlyStopping(patience= 5, monitor= 'val_loss', verbose= 1)
+lr = ReduceLROnPlateau(patience=3, monitor= 'val_loss', factor=0.5, verbose=1)
 path = 'A:\\study\\en_voice\\h5\\en_voice_base.h5'
 mc = ModelCheckpoint(path, monitor='val_loss', save_best_only=True)
 
@@ -224,11 +224,11 @@ for train_idx, val_idx in split.split(train_x, train_y):
     x_val, y_val = train_x[val_idx], train_y[val_idx]
 
     model = build_fn()
-    model.compile(optimizer = keras.optimizers.Adam(0.002),
+    model.compile(optimizer = keras.optimizers.Adam(0.001),
                  loss = keras.losses.SparseCategoricalCrossentropy(),
                  metrics = ['acc'])
 
-    history = model.fit(x = x_train, y = y_train, validation_data = (x_val, y_val), epochs = 20, callbacks=[es,lr,mc])
+    history = model.fit(x = x_train, y = y_train, validation_data = (x_val, y_val), epochs = 10, callbacks=[es,lr,mc])
     print("*******************************************************************")
     pred.append(model.predict(test_x))
     pred_.append(np.argmax(model.predict(test_x), axis = 1))
@@ -254,3 +254,22 @@ result.to_csv('A:/study/en_voice/csv/baseline.csv',index=False)
 end = datetime.now()
 time = end-start
 print('시간 : ', time)
+'''
+*******************************************************************
+*******************************************************************
+        id         0         1         2         3         4         5
+0        1  0.333630  0.059902  0.089356  0.060278  0.067076  0.389759
+1       10  0.068822  0.005805  0.005008  0.183002  0.010176  0.727188
+2      100  0.031123  0.006568  0.005811  0.318186  0.008173  0.630139
+3     1000  0.140616  0.003336  0.003495  0.174776  0.040935  0.636842
+4     1001  0.029471  0.057063  0.082883  0.213884  0.390653  0.226046
+...    ...       ...       ...       ...       ...       ...       ...
+6095   995  0.080205  0.003789  0.003431  0.272323  0.149762  0.490489
+6096   996  0.017002  0.001877  0.003072  0.309397  0.002548  0.666104
+6097   997  0.109327  0.000329  0.000222  0.363622  0.000070  0.526431
+6098   998  0.050693  0.004761  0.004380  0.640718  0.040608  0.258841
+6099   999  0.105268  0.009938  0.009479  0.405898  0.014023  0.455394
+
+[6100 rows x 7 columns]
+시간 :  0:52:45.497962
+'''
