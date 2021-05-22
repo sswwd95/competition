@@ -10,6 +10,33 @@ import warnings
 from datetime import datetime
 warnings.filterwarnings("ignore")
 
+sample_submission = pd.read_csv("A:\study\en_voice\sample_submission.csv")
+
+africa_train_paths = glob("A:\study\en_voice/train/africa/*.wav")
+australia_train_paths = glob("A:\study\en_voice/train/australia/*.wav")
+canada_train_paths = glob("A:\study\en_voice/train/canada/*.wav")
+england_train_paths = glob("A:\study\en_voice/train/england/*.wav")
+hongkong_train_paths = glob("A:\study\en_voice/train/hongkong/*.wav")
+us_train_paths = glob("A:\study\en_voice/train/us/*.wav")
+
+path_list = [africa_train_paths, australia_train_paths, canada_train_paths,
+             england_train_paths, hongkong_train_paths, us_train_paths]
+
+
+# glob로 test data의 path를 불러올때 순서대로 로드되지 않을 경우를 주의해야 합니다.
+# test_ 데이터 프레임을 만들어서 나중에 sample_submission과 id를 기준으로 merge시킬 준비를 합니다.
+
+def get_id(data):
+    return np.int(data.split("\\")[4].split(".")[0])
+test = 'A:\\study\\en_voice\\test\\*.wav'
+print(test.split("\\")[4].split(".")[0])
+
+test_ = pd.DataFrame(index = range(0, 6100), columns = ["path", "id"])
+test_["path"] = glob("A:\\study\\en_voice\\test\\*.wav")
+print('path : ',test_["path"])
+test_["id"] = test_["path"].apply(lambda x : get_id(x))
+print('id : ',test_["id"])
+
 start = datetime.now()
 
 # npy파일로 저장된 데이터를 불러옵니다.
@@ -26,6 +53,14 @@ train_data_list = [africa_train_data, australia_train_data, canada_train_data, e
 
 # 이번 대회에서 음성은 각각 다른 길이를 갖고 있습니다.
 # baseline 코드에서는 음성 중 길이가 가장 작은 길이의 데이터를 기준으로 데이터를 잘라서 사용합니다.
+# for i in range(6) : 
+#     print(len(train_data_list[i]))
+# 2500
+# 1000 
+# 1000 
+# 10000
+# 1020
+# 10000  
 
 def get_mini(data):
 
@@ -107,36 +142,97 @@ print(train_x.shape, train_y.shape, test_x.shape)
 
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.models import Model
 from tensorflow.keras.layers import (Input, Convolution2D, BatchNormalization, Flatten,
                                      Dropout, Dense, AveragePooling2D, Add)
-from tensorflow.keras.callbacks import EarlyStopping
-
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import accuracy_score
+def block(input_, units = 32, dropout_rate = 0.5):
+    
+    x = Convolution2D(units, 3, padding ="same", activation = "relu")(input_)
+    x = BatchNormalization()(x)
+    x_res = x
+    x = Convolution2D(units, 3, padding ="same", activation = "relu")(x)
+    x = BatchNormalization()(x)
+    x = Convolution2D(units, 3, padding ="same", activation = "relu")(x)
+    x = BatchNormalization()(x)
+    x = Add()([x, x_res])
+    x = AveragePooling2D()(x)
+    x = Dropout(rate=dropout_rate)(x)
+    
+    return x
 
-nmb = load_model('A:\\study\\en_voice\\mobilenet_rmsprop_1.h5')
+def second_block(input_, units = 64, dropout_rate = 0.5):
+    
+    x = Convolution2D(units, 1, padding ="same", activation = "relu")(input_)
+    x = Convolution2D(units, 3, padding ="same", activation = "relu")(x)
+    x = Convolution2D(units * 4, 1, padding ="same", activation = "relu")(x)
+    x = BatchNormalization()(x)
+    x_res = x
+    x = Convolution2D(units, 1, padding ="same", activation = "relu")(x)
+    x = Convolution2D(units, 3, padding ="same", activation = "relu")(x)
+    x = Convolution2D(units * 4, 1, padding ="same", activation = "relu")(x)
+    x = BatchNormalization()(x)
+    x = Convolution2D(units, 1, padding = "same", activation = "relu")(x)
+    x = Convolution2D(units, 3, padding ="same", activation = "relu")(x)
+    x = Convolution2D(units * 4, 1, padding = "same", activation = "relu")(x)
+    x = BatchNormalization()(x)
+    x = Add()([x, x_res])
+    x = AveragePooling2D()(x)
+    x = Dropout(rate=dropout_rate)(x)
+    
+    return x
+def build_fn():
+    dropout_rate = 0.3
+    
+    in_ = Input(shape = (train_x.shape[1:]))
+    
+    block_01 = block(in_, units = 32, dropout_rate = dropout_rate)
+    block_02 = block(block_01, units = 64, dropout_rate = dropout_rate)
+    block_03 = block(block_02, units = 128, dropout_rate = dropout_rate)
+
+    block_04 = second_block(block_03, units = 64, dropout_rate = dropout_rate)
+    block_05 = second_block(block_04, units = 128, dropout_rate = dropout_rate)
+
+    x = Flatten()(block_05)
+
+    x = Dense(units = 128, activation = "relu")(x)
+    x = BatchNormalization()(x)
+    x_res = x
+    x = Dropout(rate = dropout_rate)(x)
+
+    x = Dense(units = 128, activation = "relu")(x)
+    x = BatchNormalization()(x)
+    x = Add()([x_res, x])
+    x = Dropout(rate = dropout_rate)(x)
+
+    model_out = Dense(units = 6, activation = 'softmax')(x)
+    model = Model(in_, model_out)
+    return model
 
 split = StratifiedKFold(n_splits = 5, shuffle = True, random_state = 10)
+es = EarlyStopping(patience= 10, monitor= 'val_loss', verbose= 1, restore_best_weights=True)
+lr = ReduceLROnPlateau(patience=5, monitor= 'val_loss', factor=0.5, verbose=1)
+path = 'A:\\study\\en_voice\\h5\\en_voice_base.h5'
+mc = ModelCheckpoint(path, monitor='val_loss', save_best_only=True)
 
 pred = []
 pred_ = []
-
 for train_idx, val_idx in split.split(train_x, train_y):
     x_train, y_train = train_x[train_idx], train_y[train_idx]
     x_val, y_val = train_x[val_idx], train_y[val_idx]
 
-    model = nmb()
-    model.compile(optimizer = keras.optimizers.RMSprop(0.001),
+    model = build_fn()
+    model.compile(optimizer = keras.optimizers.Adam(0.002),
                  loss = keras.losses.SparseCategoricalCrossentropy(),
                  metrics = ['acc'])
 
-    history = model.fit(x = x_train, y = y_train, validation_data = (x_val, y_val), epochs = 8)
+    history = model.fit(x = x_train, y = y_train, validation_data = (x_val, y_val), epochs = 100, callbacks=[es,lr,mc])
     print("*******************************************************************")
     pred.append(model.predict(test_x))
     pred_.append(np.argmax(model.predict(test_x), axis = 1))
     print("*******************************************************************")
-
 
 def cov_type(data):
     return np.int(data)
@@ -145,14 +241,16 @@ def cov_type(data):
 # 만들어둔 test_ 데이터프레임을 이용하여 sample_submission과 predict값의 id를 맞춰줍니다.
 
 result = pd.concat([test_, pd.DataFrame(np.mean(pred, axis = 0))], axis = 1).iloc[:, 1:]
+print(result)
 result["id"] = result["id"].apply(lambda x : cov_type(x))
 
 result = pd.merge(sample_submission["id"], result)
 result.columns = sample_submission.columns
 
-result.to_csv("DACON.csv", index = False)
+result.to_csv('A:/study/en_voice/csv/baseline.csv',index=False)
+
+
 
 end = datetime.now()
-
-time = end - start
+time = end-start
 print('시간 : ', time)
