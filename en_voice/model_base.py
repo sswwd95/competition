@@ -212,7 +212,7 @@ def build_fn():
     return model
 
 split = StratifiedKFold(n_splits = 5, shuffle = True, random_state = 10)
-es = EarlyStopping(patience= 10, monitor= 'val_loss', verbose= 1, restore_best_weights=True)
+es = EarlyStopping(patience= 10, monitor= 'val_loss', verbose= 1)
 lr = ReduceLROnPlateau(patience=5, monitor= 'val_loss', factor=0.5, verbose=1)
 path = 'A:\\study\\en_voice\\h5\\en_voice_base.h5'
 mc = ModelCheckpoint(path, monitor='val_loss', save_best_only=True)
@@ -228,7 +228,7 @@ for train_idx, val_idx in split.split(train_x, train_y):
                  loss = keras.losses.SparseCategoricalCrossentropy(),
                  metrics = ['acc'])
 
-    history = model.fit(x = x_train, y = y_train, validation_data = (x_val, y_val), epochs = 100, callbacks=[es,lr,mc])
+    history = model.fit(x = x_train, y = y_train, validation_data = (x_val, y_val), epochs = 20, callbacks=[es,lr,mc])
     print("*******************************************************************")
     pred.append(model.predict(test_x))
     pred_.append(np.argmax(model.predict(test_x), axis = 1))
