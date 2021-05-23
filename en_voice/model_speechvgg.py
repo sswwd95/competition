@@ -152,9 +152,9 @@ from sklearn.metrics import accuracy_score
 from speech_vgg import speechVGG
 
 
-split = StratifiedKFold(n_splits = 5, shuffle = True, random_state = 10)
-es = EarlyStopping(patience= 5, monitor= 'val_loss', verbose= 1)
-lr = ReduceLROnPlateau(patience=3, monitor= 'val_loss', factor=0.5, verbose=1)
+split = StratifiedKFold(n_splits = 3, shuffle = True, random_state = 10)
+es = EarlyStopping(patience= 8, monitor= 'val_loss', verbose= 1)
+lr = ReduceLROnPlateau(patience=4, monitor= 'val_loss', factor=0.1, verbose=1)
 path = 'A:\\study\\en_voice\\h5\\speechvgg_adam5.h5'
 mc = ModelCheckpoint(path, monitor='val_loss', save_best_only=True)
 
@@ -217,3 +217,24 @@ print('시간 : ', time)
 # loss : 1.38498
 # acc : 0.63264
 
+# fold 3 
+# loss : 1.40294
+# acc : 0.63774
+
+# fold4
+# loss : 1.46277
+# acc : 0.64792
+
+# 터짐
+
+#---------------------------------
+# fold 2로 조정
+# loss : 1.78722
+# acc : 0.62759
+
+# loss : 1.91309
+# acc : 0.60455
+
+#speeechvgg_adam5 score :  2.2291938352	
+
+# ----------------------------------
