@@ -155,7 +155,7 @@ from speech_vgg import speechVGG
 split = StratifiedKFold(n_splits = 3, shuffle = True, random_state = 10)
 es = EarlyStopping(patience= 8, monitor= 'val_loss', verbose= 1)
 lr = ReduceLROnPlateau(patience=4, monitor= 'val_loss', factor=0.1, verbose=1)
-path = 'A:\\study\\en_voice\\h5\\speechvgg_adam5.h5'
+path = 'A:\\study\\en_voice\\h5\\speechvgg_adam3.h5'
 mc = ModelCheckpoint(path, monitor='val_loss', save_best_only=True)
 
 pred = []
@@ -174,7 +174,7 @@ for train_idx, val_idx in split.split(train_x, train_y):
 
     model.summary()
 
-    model.compile(optimizer = keras.optimizers.Adam(1e-5),
+    model.compile(optimizer = keras.optimizers.Adam(1e-3),
                  loss = keras.losses.SparseCategoricalCrossentropy(),
                  metrics = ['acc'])
 
@@ -201,7 +201,7 @@ result["id"] = result["id"].apply(lambda x : cov_type(x))
 result = pd.merge(sample_submission["id"], result)
 result.columns = sample_submission.columns
 
-result.to_csv('A:/study/en_voice/csv/speechvgg_adam5.csv',index=False)
+result.to_csv('A:/study/en_voice/csv/speechvgg_adam3.csv',index=False)
 
 
 
@@ -238,3 +238,13 @@ print('시간 : ', time)
 #speeechvgg_adam5 score :  2.2291938352	
 
 # ----------------------------------
+# loss : 1.34430
+# acc : 0.39191
+
+# loss : 1.34439
+# acc : 0.39191
+
+# loss : 1.34445
+# acc : 0.39184
+
+# speechvgg_adam3 score : 1.27382
