@@ -84,7 +84,7 @@ def set_length(data, d_mini):
 
 #feature를 생성합니다.
 
-def get_feature(data, sr = 22050, n_fft = 512, hop_length = 128, n_mels = 128):
+def get_feature(data, sr = 18000, n_fft = 512, hop_length = 128, n_mels = 128):
     mel = []
     for i in data:
         # win_length 는 음성을 작은 조각으로 자를때 작은 조각의 크기입니다.
@@ -125,8 +125,8 @@ train_x = train_x.reshape(-1, train_x.shape[1], train_x.shape[2], 1)
 test_x = test_x.reshape(-1, test_x.shape[1], test_x.shape[2], 1)
 print(train_x.shape)
 print(test_x.shape)
-# (25520, 128, 863, 1)
-# (6100, 128, 863, 1)
+# (25520, 128, 704, 1)
+# (6100, 128, 704, 1)
 
 # train_data의 label을 생성해 줍니다.
 
@@ -148,43 +148,23 @@ from tensorflow.keras.layers import (Input, Convolution2D, BatchNormalization, F
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import accuracy_score
-def block(input_, units = 32, dropout_rate = 0.5):
+def block(input_, units = 32, dropout_rate = 0.2):
     
     x = Convolution2D(units, 3, padding ="same", activation = "relu")(input_)
     x = BatchNormalization()(x)
-    x_res = x
+ 
     x = Convolution2D(units, 3, padding ="same", activation = "relu")(x)
     x = BatchNormalization()(x)
     x = Convolution2D(units, 3, padding ="same", activation = "relu")(x)
     x = BatchNormalization()(x)
-    x = Add()([x, x_res])
+ 
     x = AveragePooling2D()(x)
     x = Dropout(rate=dropout_rate)(x)
     
     return x
 
-def second_block(input_, units = 64, dropout_rate = 0.5):
-    
-    x = Convolution2D(units, 1, padding ="same", activation = "relu")(input_)
-    x = Convolution2D(units, 3, padding ="same", activation = "relu")(x)
-    x = Convolution2D(units * 4, 1, padding ="same", activation = "relu")(x)
-    x = BatchNormalization()(x)
-    x_res = x
-    x = Convolution2D(units, 1, padding ="same", activation = "relu")(x)
-    x = Convolution2D(units, 3, padding ="same", activation = "relu")(x)
-    x = Convolution2D(units * 4, 1, padding ="same", activation = "relu")(x)
-    x = BatchNormalization()(x)
-    x = Convolution2D(units, 1, padding = "same", activation = "relu")(x)
-    x = Convolution2D(units, 3, padding ="same", activation = "relu")(x)
-    x = Convolution2D(units * 4, 1, padding = "same", activation = "relu")(x)
-    x = BatchNormalization()(x)
-    x = Add()([x, x_res])
-    x = AveragePooling2D()(x)
-    x = Dropout(rate=dropout_rate)(x)
-    
-    return x
 def build_fn():
-    dropout_rate = 0.3
+    dropout_rate = 0.2
     
     in_ = Input(shape = (train_x.shape[1:]))
     
@@ -192,19 +172,13 @@ def build_fn():
     block_02 = block(block_01, units = 32, dropout_rate = dropout_rate)
     block_03 = block(block_02, units = 64, dropout_rate = dropout_rate)
 
-    block_04 = second_block(block_03, units = 64, dropout_rate = dropout_rate)
-    block_05 = second_block(block_04, units = 128, dropout_rate = dropout_rate)
-
-    x = Flatten()(block_05)
+    x = Flatten()(block_03)
 
     x = Dense(units = 128, activation = "relu")(x)
     x = BatchNormalization()(x)
-    x_res = x
     x = Dropout(rate = dropout_rate)(x)
-
     x = Dense(units = 128, activation = "relu")(x)
     x = BatchNormalization()(x)
-    x = Add()([x_res, x])
     x = Dropout(rate = dropout_rate)(x)
 
     model_out = Dense(units = 6, activation = 'softmax')(x)
@@ -212,9 +186,9 @@ def build_fn():
     return model
 
 split = StratifiedKFold(n_splits = 5, shuffle = True, random_state = 10)
-es = EarlyStopping(patience= 5, monitor= 'val_loss', verbose= 1)
-lr = ReduceLROnPlateau(patience=3, monitor= 'val_loss', factor=0.5, verbose=1)
-path = 'A:\\study\\en_voice\\h5\\en_voice_base.h5'
+es = EarlyStopping(patience= 10, monitor= 'val_loss', verbose= 1)
+lr = ReduceLROnPlateau(patience=5, monitor= 'val_loss', factor=0.5, verbose=1)
+path = 'A:\\study\\en_voice\\h5\\en_voice_base2.h5'
 mc = ModelCheckpoint(path, monitor='val_loss', save_best_only=True)
 
 pred = []
@@ -224,11 +198,13 @@ for train_idx, val_idx in split.split(train_x, train_y):
     x_val, y_val = train_x[val_idx], train_y[val_idx]
 
     model = build_fn()
+    model.summary()
+
     model.compile(optimizer = keras.optimizers.Adam(0.001),
                  loss = keras.losses.SparseCategoricalCrossentropy(),
                  metrics = ['acc'])
 
-    history = model.fit(x = x_train, y = y_train, validation_data = (x_val, y_val), epochs = 10, callbacks=[es,lr,mc])
+    history = model.fit(x = x_train, y = y_train, validation_data = (x_val, y_val), epochs = 100, callbacks=[es,lr,mc])
     print("*******************************************************************")
     pred.append(model.predict(test_x))
     pred_.append(np.argmax(model.predict(test_x), axis = 1))
@@ -247,29 +223,100 @@ result["id"] = result["id"].apply(lambda x : cov_type(x))
 result = pd.merge(sample_submission["id"], result)
 result.columns = sample_submission.columns
 
-result.to_csv('A:/study/en_voice/csv/baseline.csv',index=False)
+result.to_csv('A:/study/en_voice/csv/baseline2.csv',index=False)
 
 
 
 end = datetime.now()
 time = end-start
 print('시간 : ', time)
-'''
-*******************************************************************
-*******************************************************************
-        id         0         1         2         3         4         5
-0        1  0.333630  0.059902  0.089356  0.060278  0.067076  0.389759
-1       10  0.068822  0.005805  0.005008  0.183002  0.010176  0.727188
-2      100  0.031123  0.006568  0.005811  0.318186  0.008173  0.630139
-3     1000  0.140616  0.003336  0.003495  0.174776  0.040935  0.636842
-4     1001  0.029471  0.057063  0.082883  0.213884  0.390653  0.226046
-...    ...       ...       ...       ...       ...       ...       ...
-6095   995  0.080205  0.003789  0.003431  0.272323  0.149762  0.490489
-6096   996  0.017002  0.001877  0.003072  0.309397  0.002548  0.666104
-6097   997  0.109327  0.000329  0.000222  0.363622  0.000070  0.526431
-6098   998  0.050693  0.004761  0.004380  0.640718  0.040608  0.258841
-6099   999  0.105268  0.009938  0.009479  0.405898  0.014023  0.455394
 
-[6100 rows x 7 columns]
-시간 :  0:52:45.497962
+# second block 삭제
+'''
+Model: "model"
+__________________________________________________________________________________________________
+Layer (type)                    Output Shape         Param #     Connected to
+==================================================================================================
+input_1 (InputLayer)            [(None, 128, 704, 1) 0
+__________________________________________________________________________________________________
+conv2d (Conv2D)                 (None, 128, 704, 16) 160         input_1[0][0]
+__________________________________________________________________________________________________
+batch_normalization (BatchNorma (None, 128, 704, 16) 64          conv2d[0][0]
+__________________________________________________________________________________________________
+conv2d_1 (Conv2D)               (None, 128, 704, 16) 2320        batch_normalization[0][0]
+__________________________________________________________________________________________________
+batch_normalization_1 (BatchNor (None, 128, 704, 16) 64          conv2d_1[0][0]
+__________________________________________________________________________________________________
+conv2d_2 (Conv2D)               (None, 128, 704, 16) 2320        batch_normalization_1[0][0]
+__________________________________________________________________________________________________
+batch_normalization_2 (BatchNor (None, 128, 704, 16) 64          conv2d_2[0][0]
+__________________________________________________________________________________________________
+add (Add)                       (None, 128, 704, 16) 0           batch_normalization_2[0][0]
+                                                                 batch_normalization[0][0]
+__________________________________________________________________________________________________
+average_pooling2d (AveragePooli (None, 64, 352, 16)  0           add[0][0]
+__________________________________________________________________________________________________
+dropout (Dropout)               (None, 64, 352, 16)  0           average_pooling2d[0][0]
+__________________________________________________________________________________________________
+conv2d_3 (Conv2D)               (None, 64, 352, 32)  4640        dropout[0][0]
+__________________________________________________________________________________________________
+batch_normalization_3 (BatchNor (None, 64, 352, 32)  128         conv2d_3[0][0]
+__________________________________________________________________________________________________
+conv2d_4 (Conv2D)               (None, 64, 352, 32)  9248        batch_normalization_3[0][0]
+__________________________________________________________________________________________________
+batch_normalization_4 (BatchNor (None, 64, 352, 32)  128         conv2d_4[0][0]
+__________________________________________________________________________________________________
+conv2d_5 (Conv2D)               (None, 64, 352, 32)  9248        batch_normalization_4[0][0]
+__________________________________________________________________________________________________
+batch_normalization_5 (BatchNor (None, 64, 352, 32)  128         conv2d_5[0][0]
+__________________________________________________________________________________________________
+add_1 (Add)                     (None, 64, 352, 32)  0           batch_normalization_5[0][0]
+                                                                 batch_normalization_3[0][0]
+__________________________________________________________________________________________________
+average_pooling2d_1 (AveragePoo (None, 32, 176, 32)  0           add_1[0][0]
+__________________________________________________________________________________________________
+dropout_1 (Dropout)             (None, 32, 176, 32)  0           average_pooling2d_1[0][0]
+__________________________________________________________________________________________________
+conv2d_6 (Conv2D)               (None, 32, 176, 64)  18496       dropout_1[0][0]
+__________________________________________________________________________________________________
+batch_normalization_6 (BatchNor (None, 32, 176, 64)  256         conv2d_6[0][0]
+__________________________________________________________________________________________________
+conv2d_7 (Conv2D)               (None, 32, 176, 64)  36928       batch_normalization_6[0][0]
+__________________________________________________________________________________________________
+batch_normalization_7 (BatchNor (None, 32, 176, 64)  256         conv2d_7[0][0]
+__________________________________________________________________________________________________
+conv2d_8 (Conv2D)               (None, 32, 176, 64)  36928       batch_normalization_7[0][0]
+__________________________________________________________________________________________________
+batch_normalization_8 (BatchNor (None, 32, 176, 64)  256         conv2d_8[0][0]
+__________________________________________________________________________________________________
+add_2 (Add)                     (None, 32, 176, 64)  0           batch_normalization_8[0][0]
+                                                                 batch_normalization_6[0][0]
+__________________________________________________________________________________________________
+average_pooling2d_2 (AveragePoo (None, 16, 88, 64)   0           add_2[0][0]
+__________________________________________________________________________________________________
+dropout_2 (Dropout)             (None, 16, 88, 64)   0           average_pooling2d_2[0][0]
+__________________________________________________________________________________________________
+flatten (Flatten)               (None, 90112)        0           dropout_2[0][0]
+__________________________________________________________________________________________________
+dense (Dense)                   (None, 128)          11534464    flatten[0][0]
+__________________________________________________________________________________________________
+batch_normalization_9 (BatchNor (None, 128)          512         dense[0][0]
+__________________________________________________________________________________________________
+dropout_3 (Dropout)             (None, 128)          0           batch_normalization_9[0][0]
+__________________________________________________________________________________________________
+dense_1 (Dense)                 (None, 128)          16512       dropout_3[0][0]
+__________________________________________________________________________________________________
+batch_normalization_10 (BatchNo (None, 128)          512         dense_1[0][0]
+__________________________________________________________________________________________________
+add_3 (Add)                     (None, 128)          0           batch_normalization_9[0][0]
+                                                                 batch_normalization_10[0][0]
+__________________________________________________________________________________________________
+dropout_4 (Dropout)             (None, 128)          0           add_3[0][0]
+__________________________________________________________________________________________________
+dense_2 (Dense)                 (None, 6)            774         dropout_4[0][0]
+==================================================================================================
+Total params: 11,674,406
+Trainable params: 11,673,222
+Non-trainable params: 1,184
+__________________________________________________________________________________________________
 '''
