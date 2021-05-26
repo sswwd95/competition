@@ -1,4 +1,5 @@
 from pickle import load
+from librosa.filters import mel
 import pandas as pd
 import numpy as np
 import os
@@ -94,10 +95,23 @@ def get_feature(data, sr = 18000, n_fft = 512, hop_length = 128, n_mels = 128):
         mel.append(mel_)
     mel = np.array(mel)
     mel = librosa.power_to_db(mel, ref = np.max)
+    print(np.max(mel), np.min(mel))
+    # 0.0 -80.0
 
+    print("================================")
     mel_mean = mel.mean()
+    print(mel_mean)
+    # -69.2475
+
+    print("================================")
     mel_std = mel.std()
+    print(mel_std)
+    # 14.347334
+
+    print("================================")
     mel = (mel - mel_mean) / mel_std
+    print(mel)
+    print("================================")
 
     return mel
 
@@ -110,6 +124,7 @@ train_mini = get_mini(train_x)
 test_mini = get_mini(test_x)
 
 mini = np.min([train_mini, test_mini])
+
 
 # data의 길이를 가장 작은 길이에 맞춰 잘라줍니다.
 
@@ -130,6 +145,7 @@ print(test_x.shape)
 
 # train_data의 label을 생성해 줍니다.
 
+
 train_y = np.concatenate((np.zeros(len(africa_train_data), dtype = np.int),
                         np.ones(len(australia_train_data), dtype = np.int),
                          np.ones(len(canada_train_data), dtype = np.int) * 2,
@@ -148,37 +164,43 @@ from tensorflow.keras.layers import (Input, Convolution2D, BatchNormalization, F
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import accuracy_score
-def block(input_, units = 32, dropout_rate = 0.2):
+def block(input_, units= 8, dropout_rate=0.2):
     
     x = Convolution2D(units, 3, padding ="same", activation = "relu")(input_)
+    x = Dropout(rate=dropout_rate)(x)
     x = BatchNormalization()(x)
- 
+    x_res = x
     x = Convolution2D(units, 3, padding ="same", activation = "relu")(x)
+    x = Dropout(rate=dropout_rate)(x)
     x = BatchNormalization()(x)
     x = Convolution2D(units, 3, padding ="same", activation = "relu")(x)
+    x = Dropout(rate=dropout_rate)(x)
     x = BatchNormalization()(x)
- 
+    x = Add()([x, x_res])
     x = AveragePooling2D()(x)
     x = Dropout(rate=dropout_rate)(x)
-    
     return x
+
 
 def build_fn():
     dropout_rate = 0.2
     
     in_ = Input(shape = (train_x.shape[1:]))
     
-    block_01 = block(in_, units = 16, dropout_rate = dropout_rate)
-    block_02 = block(block_01, units = 32, dropout_rate = dropout_rate)
-    block_03 = block(block_02, units = 64, dropout_rate = dropout_rate)
+    block_01 = block(in_, units = 8, dropout_rate = dropout_rate)
+    block_02 = block(block_01, units = 16, dropout_rate = dropout_rate)
+    block_03 = block(block_02, units = 32, dropout_rate = dropout_rate)
 
     x = Flatten()(block_03)
 
-    x = Dense(units = 128, activation = "relu")(x)
+    x = Dense(units = 64, activation = "relu")(x)
     x = BatchNormalization()(x)
+    x_res = x
     x = Dropout(rate = dropout_rate)(x)
+
     x = Dense(units = 128, activation = "relu")(x)
     x = BatchNormalization()(x)
+    x = Add()([x_res, x])
     x = Dropout(rate = dropout_rate)(x)
 
     model_out = Dense(units = 6, activation = 'softmax')(x)
@@ -230,8 +252,6 @@ result.to_csv('A:/study/en_voice/csv/baseline2.csv',index=False)
 end = datetime.now()
 time = end-start
 print('시간 : ', time)
-
-# second block 삭제
 '''
 Model: "model"
 __________________________________________________________________________________________________
