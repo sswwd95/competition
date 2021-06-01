@@ -15,13 +15,15 @@ from sklearn.model_selection import train_test_split
 from keras.callbacks import ReduceLROnPlateau
 #########데이터 로드
 
-caltech_dir =  '../lotte/train/'
+train_dir =  'A:\\study\\data\\lotte\\train'
 categories = []
 for i in range(0,1000) :
     i = "%d"%i
     categories.append(i)
+print(categories)
 
 nb_classes = len(categories)
+print(nb_classes)
 
 image_w = 225
 image_h = 225
@@ -36,8 +38,10 @@ for idx, cat in enumerate(categories):
     #one-hot 돌리기.
     label = [0 for i in range(nb_classes)]
     label[idx] = 1
-
-    image_dir = caltech_dir + "/" + cat
+    print(label)
+    image_dir = train_dir + "/" + cat
+    print(image_dir)
+    print(cat)
     files = glob.glob(image_dir+"/*.jpg")
     print(cat, " 파일 길이 : ", len(files))
     for i, f in enumerate(files):
@@ -73,7 +77,6 @@ for i in range(0,72000):
     image2 = image2.convert('RGB')
     image2 = image2.resize((image_w, image_h))
     image_data2=asarray(image2)
-    # image_data2 = signal.medfilt2d(np.array(image_data2), kernel_size=3)
     img1.append(image_data2)    
 
 np.save("../data/lotte/npy/test225.npy", arr=img1)
